@@ -27,7 +27,7 @@ if not st.session_state["autenticado"]:
 # =========================================================================
 
 # 🖼️ LOGOTIPO OFICIAL DE KARTONAGE (Ruta CDN garantizada para no romperse)
-URL_LOGO_EMPRESA = "https://squarespace-cdn.com"
+URL_LOGO_EMPRESA = "logo.png"
 
 # Mostramos tu logotipo centrado en la aplicación
 st.image(URL_LOGO_EMPRESA, width=220)
