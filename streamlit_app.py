@@ -1,5 +1,7 @@
 import streamlit as st
 import pandas as pd
+import requests
+import os
 
 st.set_page_config(page_title="Kartonage - Stock", page_icon="📦", layout="centered")
 
@@ -35,7 +37,10 @@ st.title("📦 Control de Inventario")
 st.caption("Kartonage Empaques y corrugados — Consulta en tiempo real")
 st.markdown("---")
 
-# DATOS DE PRUEBA (Reemplaza con tu base de datos cuando sea necesario)
+# URL del backend (cambiar a tu URL de Render)
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+
+# DATOS DE PRUEBA como fallback
 PRODUCTOS_MOCK = [
     {"code": "K001", "name": "Caja Cartón A", "spec": "20x20x20", "stock": 150, "price": 2.50},
     {"code": "K002", "name": "Caja Cartón B", "spec": "30x30x30", "stock": 3, "price": 4.75},
@@ -44,11 +49,22 @@ PRODUCTOS_MOCK = [
 ]
 
 def buscar_producto(termino):
-    """Busca productos por código o nombre"""
+    """Busca productos via API del backend, usa mock como fallback"""
+    try:
+        # Intentar conectar al backend
+        response = requests.get(f"{BACKEND_URL}/search/{termino}", timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("success"):
+                return data.get("productos", [])
+    except:
+        pass
+    
+    # Fallback a datos mock si el backend no responde
+    st.warning("⚠️ Usando datos de prueba (backend no disponible)")
     termino_lower = termino.lower()
-    resultados = [p for p in PRODUCTOS_MOCK 
-                  if termino_lower in p["code"].lower() or termino_lower in p["name"].lower()]
-    return resultados
+    return [p for p in PRODUCTOS_MOCK 
+            if termino_lower in p["code"].lower() or termino_lower in p["name"].lower()]
 
 busqueda = st.text_input("🔍 Escribe el nombre o código del producto:", "")
 
