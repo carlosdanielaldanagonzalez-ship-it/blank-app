@@ -4,20 +4,29 @@ import pandas as pd
 
 st.set_page_config(page_title="Consultor de Stock", page_icon="📦", layout="centered")
 
-# --- BLOQUE DE SEGURIDAD MANUAL ---
-password_input = st.text_input("🔑 Introduce la contraseña de acceso:", type="password")
+# --- SISTEMA DE MEMORIA DE SEGURIDAD (SESSION STATE) ---
+if "autenticado" not in st.session_state:
+    st.session_state["autenticado"] = False
 
-# 🔥 CAMBIA "mi_clave_123" por la contraseña secreta que tú quieras usar en tu iPhone
-if password_input != "mi_clave_123":
-    st.warning("⚠️ Acceso restringido. Por favor, introduce la clave correcta.")
-    st.stop()  # Detiene el código si la clave es incorrecta
-# ----------------------------------
+# Si el usuario aún no está autenticado, muestra la pantalla del candado
+if not st.session_state["autenticado"]:
+    st.title("🔒 Acceso Restringido")
+    password_input = st.text_input("Introduce la contraseña de acceso para tu iPhone:", type="password")
+    
+    # 🔑 CAMBIA "mi_clave_123" por la contraseña secreta real que tú quieras usar
+    if st.button("Ingresar"):
+        if password_input == "mi_clave_123":
+            st.session_state["autenticado"] = True
+            st.rerun() # Recarga la app ya con el acceso concedido
+        else:
+            st.error("❌ Contraseña incorrecta. Inténtalo de nuevo.")
+    st.stop() # Detiene la aplicación aquí si no se ha presionado el botón con la clave correcta
 
+# --- SI LA CONTRASEÑA ES CORRECTA, SE MUESTRA EL SISTEMA COMPLETO ---
 st.title("📦 Control de Inventario en Tiempo Real")
 st.subheader("Neon Database Link")
 
 CONN_STR = "postgresql://neondb_owner:npg_cMOfPi6WmH4p@ep-flat-firefly-axqi8b73.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require"
-
 
 def buscar_producto(termino):
     try:
@@ -43,7 +52,6 @@ def buscar_producto(termino):
     except Exception as e:
         st.error(f"Error de conexión con Neon: {e}")
         return pd.DataFrame()
-
 
 busqueda = st.text_input("🔍 Escribe el nombre o código del producto:", "")
 
@@ -72,3 +80,8 @@ if busqueda:
         st.warning("❌ No se encontró ningún producto con ese nombre o código.")
 else:
     st.info("💡 Consejo: Puedes escribir solo una parte del nombre.")
+
+# Botón opcional para cerrar sesión en el celular si lo necesitas
+if st.sidebar.button("Cerrar Sesión 🔒"):
+    st.session_state["autenticado"] = False
+    st.rerun()
