@@ -1,5 +1,5 @@
 import streamlit as st
-import pg8000.native
+from sqlalchemy import create_engine, text
 
 st.set_page_config(page_title="Kartonage - Stock", page_icon="📦", layout="centered")
 
@@ -37,28 +37,21 @@ st.markdown("---")
 
 def buscar_producto(termino):
     try:
-        conn = pg8000.native.connect(
-            host="ep-flat-firefly-axqi8b73.c-4.us-east-2.aws.neon.tech",
-            user="neondb_owner",
-            password="npg_cMOfPi6WmH4p",
-            database="neondb",
-            ssl_context=True
-        )
-        
-        # Consulta SQL limpia
-        sql = """
-            SELECT 
-                p.code, 
-                p.name, 
-                p.spec,
-                COALESCE((SELECT SUM(quantity) FROM purchases WHERE code = p.code), 0) - 
-                COALESCE((SELECT SUM(quantity) FROM sales WHERE code = p.code), 0) AS stock_actual,
-                p.sale_price
-            FROM products p
-            WHERE p.code ILIKE :termino OR p.name ILIKE :termino;
-        """
-        datos = conn.run(sql, termino=f"%{termino}%")
-        conn.close()
+        engine = create_engine("postgresql+psycopg://neondb_owner:npg_cMOfPi6WmH4p@ep-flat-firefly-axqi8b73.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require")
+        with engine.connect() as conn:
+            sql = text("""
+                SELECT 
+                    p.code, 
+                    p.name, 
+                    p.spec,
+                    COALESCE((SELECT SUM(quantity) FROM purchases WHERE code = p.code), 0) - 
+                    COALESCE((SELECT SUM(quantity) FROM sales WHERE code = p.code), 0) AS stock_actual,
+                    p.sale_price
+                FROM products p
+                WHERE p.code ILIKE :termino OR p.name ILIKE :termino;
+            """)
+            resultado = conn.execute(sql, {"termino": f"%{termino}%"})
+            datos = resultado.fetchall()
         return datos
     except Exception as e:
         st.error(f"Error de conexión con Neon: {e}")
