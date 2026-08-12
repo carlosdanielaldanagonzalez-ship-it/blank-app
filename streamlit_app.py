@@ -1,6 +1,5 @@
 import streamlit as st
 import psycopg2
-import pandas as pd
 
 st.set_page_config(page_title="Kartonage - Stock", page_icon="📦", layout="centered")
 
@@ -26,10 +25,10 @@ if not st.session_state["autenticado"]:
 # --- SI LA CONTRASEÑA ES CORRECTA, SE MUESTRA EL BUSCADOR CON TU LOGO ---
 # =========================================================================
 
-# 🖼️ LOGOTIPO OFICIAL DE KARTONAGE (Ruta CDN garantizada para no romperse)
+# 🖼️ LOGOTIPO OFICIAL DE KARTONAGE (Ruta CDN garantizada)
 URL_LOGO_EMPRESA = "logo.png"
 
-# Mostramos tu logotipo centrado en la aplicación
+# Mostramos tu logotipo centrado en la aplicación móvil
 st.image(URL_LOGO_EMPRESA, width=220)
 
 st.title("📦 Control de Inventario")
@@ -42,6 +41,8 @@ def buscar_producto(termino):
     try:
         conn = psycopg2.connect(CONN_STR)
         cursor = conn.cursor()
+        
+        # Consulta SQL limpia
         sql = """
             SELECT 
                 p.code, 
@@ -54,29 +55,37 @@ def buscar_producto(termino):
             WHERE p.code ILIKE %s OR p.name ILIKE %s;
         """
         cursor.execute(sql, (f"%{termino}%", f"%{termino}%"))
-        columnas = [desc for desc in cursor.description]
         datos = cursor.fetchall()
+        
         cursor.close()
         conn.close()
-        return pd.DataFrame(datos, columns=columnas)
+        return datos
     except Exception as e:
         st.error(f"Error de conexión con Neon: {e}")
-        return pd.DataFrame()
+        return []
 
 busqueda = st.text_input("🔍 Escribe el nombre o código del producto:", "")
 
 if busqueda:
-    df = buscar_producto(busqueda)
-    if not df.empty:
-        st.success(f"Se encontraron {len(df)} coincidencias:")
-        for index, fila in df.iterrows():
+    resultados = buscar_producto(busqueda)
+    
+    if resultados:
+        st.success(f"Se encontraron {len(resultados)} coincidencias:")
+        
+        # 🛠️ CORRECCIÓN CLAVE: Leemos los datos por posición fija de tu consulta SQL para evitar el TypeError
+        for fila in resultados:
+            codigo = fila[0]
+            nombre = fila[1]
+            especificacion = fila[2]
+            stock = int(fila[3])
+            precio = float(fila[4])
+            
             with st.container():
                 col1, col2, col3 = st.columns(3)
                 with col1:
-                    st.markdown(f"### **{fila['name']}**")
-                    st.caption(f"Código: {fila['code']} | Esp: {fila['spec']}")
+                    st.markdown(f"### **{nombre}**")
+                    st.caption(f"Código: {codigo} | Esp: {especificacion}")
                 with col2:
-                    stock = int(fila['stock_actual'])
                     if stock <= 0:
                         st.markdown(f"## 🔴 **{stock}**\n*Sin stock*")
                     elif stock <= 5:
@@ -84,7 +93,7 @@ if busqueda:
                     else:
                         st.markdown(f"## 🟢 **{stock}**\n*Disponible*")
                 with col3:
-                    st.markdown(f"## 💵 **${fila['sale_price']:.2f}**\n*Precio Venta*")
+                    st.markdown(f"## 💵 **${precio:.2f}**\n*Precio Venta*")
                 st.markdown("---")
     else:
         st.warning("❌ No se encontró ningún producto con ese nombre o código.")
