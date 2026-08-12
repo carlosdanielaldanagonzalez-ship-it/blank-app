@@ -2,7 +2,7 @@ import streamlit as st
 import psycopg2
 import pandas as pd
 
-st.set_page_config(page_title="Consultor de Stock", page_icon="📦", layout="centered")
+st.set_page_config(page_title="Kartonage - Stock", page_icon="📦", layout="centered")
 
 # --- SISTEMA DE MEMORIA DE SEGURIDAD (SESSION STATE) ---
 if "autenticado" not in st.session_state:
@@ -13,18 +13,28 @@ if not st.session_state["autenticado"]:
     st.title("🔒 Acceso Restringido")
     password_input = st.text_input("Introduce la contraseña de acceso para tu iPhone:", type="password")
     
-    # 🔑 CAMBIA "mi_clave_123" por la contraseña secreta real que tú quieras usar
+    # 🔑 CONTRASEÑA SECRETA DE ACCESO
     if st.button("Ingresar"):
-        if password_input == "mi_clave_123":
+        if password_input == "mi_clave_123": # <--- Cambia esto por la contraseña que tú quieras
             st.session_state["autenticado"] = True
-            st.rerun() # Recarga la app ya con el acceso concedido
+            st.rerun()
         else:
             st.error("❌ Contraseña incorrecta. Inténtalo de nuevo.")
-    st.stop() # Detiene la aplicación aquí si no se ha presionado el botón con la clave correcta
+    st.stop()
 
-# --- SI LA CONTRASEÑA ES CORRECTA, SE MUESTRA EL SISTEMA COMPLETO ---
-st.title("📦 Control de Inventario en Tiempo Real")
-st.subheader("Neon Database Link")
+# =========================================================================
+# --- SI LA CONTRASEÑA ES CORRECTA, SE MUESTRA EL BUSCADOR CON TU LOGO ---
+# =========================================================================
+
+# 🖼️ LOGOTIPO OFICIAL DE KARTONAGE (Extraído de tu Facebook)
+URL_LOGO_EMPRESA = "https://fbcdn.net" 
+
+# Mostramos el logo centrado en la aplicación móvil
+st.image(URL_LOGO_EMPRESA, width=160)
+
+st.title("📦 Control de Inventario")
+st.caption("Kartonage Empaques y corrugados — Consulta en tiempo real")
+st.markdown("---")
 
 CONN_STR = "postgresql://neondb_owner:npg_cMOfPi6WmH4p@ep-flat-firefly-axqi8b73.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require"
 
@@ -44,7 +54,7 @@ def buscar_producto(termino):
             WHERE p.code ILIKE %s OR p.name ILIKE %s;
         """
         cursor.execute(sql, (f"%{termino}%", f"%{termino}%"))
-        columnas = [desc[0] for desc in cursor.description]
+        columnas = [desc for desc in cursor.description]
         datos = cursor.fetchall()
         cursor.close()
         conn.close()
@@ -81,7 +91,7 @@ if busqueda:
 else:
     st.info("💡 Consejo: Puedes escribir solo una parte del nombre.")
 
-# Botón opcional para cerrar sesión en el celular si lo necesitas
+# Botón para cerrar sesión en el menú del celular
 if st.sidebar.button("Cerrar Sesión 🔒"):
     st.session_state["autenticado"] = False
     st.rerun()
