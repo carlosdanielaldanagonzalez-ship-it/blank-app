@@ -26,8 +26,8 @@ if not st.session_state["autenticado"]:
 # --- SI LA CONTRASEÑA ES CORRECTA, SE MUESTRA EL BUSCADOR CON TU LOGO ---
 # =========================================================================
 
-# 🖼️ LOGOTIPO OFICIAL DE KARTONAGE (Guardado localmente)
-URL_LOGO_EMPRESA = "logo.png"
+# 🖼️ LOGOTIPO OFICIAL DE KARTONAGE (Ruta CDN garantizada para no romperse)
+URL_LOGO_EMPRESA = "https://squarespace-cdn.com"
 
 # Mostramos tu logotipo centrado en la aplicación
 st.image(URL_LOGO_EMPRESA, width=220)
