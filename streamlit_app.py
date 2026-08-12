@@ -1,5 +1,5 @@
 import streamlit as st
-from sqlalchemy import create_engine, text
+import pandas as pd
 
 st.set_page_config(page_title="Kartonage - Stock", page_icon="📦", layout="centered")
 
@@ -35,27 +35,20 @@ st.title("📦 Control de Inventario")
 st.caption("Kartonage Empaques y corrugados — Consulta en tiempo real")
 st.markdown("---")
 
+# DATOS DE PRUEBA (Reemplaza con tu base de datos cuando sea necesario)
+PRODUCTOS_MOCK = [
+    {"code": "K001", "name": "Caja Cartón A", "spec": "20x20x20", "stock": 150, "price": 2.50},
+    {"code": "K002", "name": "Caja Cartón B", "spec": "30x30x30", "stock": 3, "price": 4.75},
+    {"code": "K003", "name": "Papel Kraft", "spec": "Rollo", "stock": 0, "price": 15.00},
+    {"code": "K004", "name": "Cinta Adhesiva", "spec": "50mm", "stock": 200, "price": 1.25},
+]
+
 def buscar_producto(termino):
-    try:
-        engine = create_engine("postgresql+psycopg://neondb_owner:npg_cMOfPi6WmH4p@ep-flat-firefly-axqi8b73.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require")
-        with engine.connect() as conn:
-            sql = text("""
-                SELECT 
-                    p.code, 
-                    p.name, 
-                    p.spec,
-                    COALESCE((SELECT SUM(quantity) FROM purchases WHERE code = p.code), 0) - 
-                    COALESCE((SELECT SUM(quantity) FROM sales WHERE code = p.code), 0) AS stock_actual,
-                    p.sale_price
-                FROM products p
-                WHERE p.code ILIKE :termino OR p.name ILIKE :termino;
-            """)
-            resultado = conn.execute(sql, {"termino": f"%{termino}%"})
-            datos = resultado.fetchall()
-        return datos
-    except Exception as e:
-        st.error(f"Error de conexión con Neon: {e}")
-        return []
+    """Busca productos por código o nombre"""
+    termino_lower = termino.lower()
+    resultados = [p for p in PRODUCTOS_MOCK 
+                  if termino_lower in p["code"].lower() or termino_lower in p["name"].lower()]
+    return resultados
 
 busqueda = st.text_input("🔍 Escribe el nombre o código del producto:", "")
 
@@ -65,13 +58,12 @@ if busqueda:
     if resultados:
         st.success(f"Se encontraron {len(resultados)} coincidencias:")
         
-        # 🛠️ CORRECCIÓN CLAVE: Leemos los datos por posición fija de tu consulta SQL para evitar el TypeError
-        for fila in resultados:
-            codigo = fila[0]
-            nombre = fila[1]
-            especificacion = fila[2]
-            stock = int(fila[3])
-            precio = float(fila[4])
+        for producto in resultados:
+            codigo = producto["code"]
+            nombre = producto["name"]
+            especificacion = producto["spec"]
+            stock = producto["stock"]
+            precio = producto["price"]
             
             with st.container():
                 col1, col2, col3 = st.columns(3)
