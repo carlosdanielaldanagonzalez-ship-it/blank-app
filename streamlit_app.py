@@ -1,5 +1,5 @@
 import streamlit as st
-import psycopg2
+import pg8000.native
 
 st.set_page_config(page_title="Kartonage - Stock", page_icon="📦", layout="centered")
 
@@ -35,12 +35,15 @@ st.title("📦 Control de Inventario")
 st.caption("Kartonage Empaques y corrugados — Consulta en tiempo real")
 st.markdown("---")
 
-CONN_STR = "postgresql://neondb_owner:npg_cMOfPi6WmH4p@ep-flat-firefly-axqi8b73.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require"
-
 def buscar_producto(termino):
     try:
-        conn = psycopg2.connect(CONN_STR)
-        cursor = conn.cursor()
+        conn = pg8000.native.connect(
+            host="ep-flat-firefly-axqi8b73.c-4.us-east-2.aws.neon.tech",
+            user="neondb_owner",
+            password="npg_cMOfPi6WmH4p",
+            database="neondb",
+            ssl_context=True
+        )
         
         # Consulta SQL limpia
         sql = """
@@ -52,12 +55,9 @@ def buscar_producto(termino):
                 COALESCE((SELECT SUM(quantity) FROM sales WHERE code = p.code), 0) AS stock_actual,
                 p.sale_price
             FROM products p
-            WHERE p.code ILIKE %s OR p.name ILIKE %s;
+            WHERE p.code ILIKE :termino OR p.name ILIKE :termino;
         """
-        cursor.execute(sql, (f"%{termino}%", f"%{termino}%"))
-        datos = cursor.fetchall()
-        
-        cursor.close()
+        datos = conn.run(sql, termino=f"%{termino}%")
         conn.close()
         return datos
     except Exception as e:
